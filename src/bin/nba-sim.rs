@@ -26,41 +26,101 @@ fn main() {
     println!("Format: 2026 NBA Postseason (Play-In + Best-of-7 Playoffs)\n");
     
     let start_time = Instant::now();
+    let mut play_in_counts = [0u32; 30];
+    let mut playoff_counts = [0u32; 30];
+    let mut conf_finals_counts = [0u32; 30];
+    let mut finals_counts = [0u32; 30];
     let mut championships = [0u32; 30];
+    let mut total_games_simulated = 0u64;
 
-    // Single-threaded simulation loop for Phase 1
+    // Single-threaded simulation loop for Phase 1 / Phase 3 Baseline
     for sim_id in 0..args.simulations {
         // Hierarchical seeded RNG for deterministic execution (SimID changes per loop)
         let mut rng = NbaRng::from_seed_and_ids(args.seed, sim_id as u64, 0);
         let result = simulate_postseason(&mut rng);
+
+        total_games_simulated += result.total_games as u64;
+        
+        for &team_id in &result.play_in_teams {
+            play_in_counts[team_id.0 as usize] += 1;
+        }
+        for &team_id in &result.playoff_teams {
+            playoff_counts[team_id.0 as usize] += 1;
+        }
+        for &team_id in &result.conf_finals_teams {
+            conf_finals_counts[team_id.0 as usize] += 1;
+        }
+        for &team_id in &result.finals_teams {
+            finals_counts[team_id.0 as usize] += 1;
+        }
         championships[result.champion.0 as usize] += 1;
     }
 
     let duration = start_time.elapsed();
+    let total_sims_f = args.simulations as f64;
     
-    println!("{:<22} {:<7} {:<10}", "Team", "Conf", "Champion %");
+    println!("{:<24} {:<6} {:<11} {:<11} {:<14} {:<10} {:<10}", 
+        "Team", "Conf", "Play-In %", "Playoffs %", "Conf Finals %", "Finals %", "Champion %");
+    println!("{:-<92}", "");
 
     let mut sorted_teams: Vec<_> = TEAMS.iter().collect();
-    // Sort by championships descending
+    // Sort by championships descending, then finals, then conf finals, then playoffs
     sorted_teams.sort_by(|a, b| {
-        let wins_a = championships[a.id.0 as usize];
-        let wins_b = championships[b.id.0 as usize];
-        wins_b.cmp(&wins_a)
+        let champ_diff = championships[b.id.0 as usize].cmp(&championships[a.id.0 as usize]);
+        if champ_diff != std::cmp::Ordering::Equal {
+            return champ_diff;
+        }
+        let fin_diff = finals_counts[b.id.0 as usize].cmp(&finals_counts[a.id.0 as usize]);
+        if fin_diff != std::cmp::Ordering::Equal {
+            return fin_diff;
+        }
+        let cf_diff = conf_finals_counts[b.id.0 as usize].cmp(&conf_finals_counts[a.id.0 as usize]);
+        if cf_diff != std::cmp::Ordering::Equal {
+            return cf_diff;
+        }
+        playoff_counts[b.id.0 as usize].cmp(&playoff_counts[a.id.0 as usize])
     });
 
     for team in sorted_teams {
-        let wins = championships[team.id.0 as usize];
-        if wins > 0 {
-            let champ_pct = (wins as f64 / args.simulations as f64) * 100.0;
-            println!("{:<22} {:<7} {:<10.2}%", 
+        let play_in = play_in_counts[team.id.0 as usize];
+        let playoffs = playoff_counts[team.id.0 as usize];
+        let conf_finals = conf_finals_counts[team.id.0 as usize];
+        let finals = finals_counts[team.id.0 as usize];
+        let champ = championships[team.id.0 as usize];
+
+        if play_in > 0 || playoffs > 0 {
+            let play_in_str = if team.seed >= 7 && team.seed <= 10 {
+                format!("{:>8.1}%", (play_in as f64 / total_sims_f) * 100.0)
+            } else {
+                format!("{:>9}", "---")
+            };
+
+            let playoffs_str = format!("{:>8.1}%", (playoffs as f64 / total_sims_f) * 100.0);
+            let conf_finals_str = format!("{:>11.1}%", (conf_finals as f64 / total_sims_f) * 100.0);
+            let finals_str = format!("{:>8.1}%", (finals as f64 / total_sims_f) * 100.0);
+            let champ_str = format!("{:>8.2}%", (champ as f64 / total_sims_f) * 100.0);
+
+            println!("{:<24} {:<6} {:<11} {:<11} {:<14} {:<10} {:<10}", 
                 team.name, 
                 format!("{:?}", team.conf), 
-                champ_pct
+                play_in_str,
+                playoffs_str,
+                conf_finals_str,
+                finals_str,
+                champ_str
             );
         }
     }
     
-    println!("\nRuntime: {:.2?}", duration);
-    let throughput = args.simulations as f64 / duration.as_secs_f64();
-    println!("Throughput: {:.0} postseasons/sec", throughput);
+    println!("\n{:-<92}", "");
+    println!("Runtime: {:.4?}", duration);
+    println!("Total Postseasons: {}", args.simulations);
+    println!("Total Games Simulated: {}", total_games_simulated);
+    let avg_games_per_ps = total_games_simulated as f64 / total_sims_f;
+    println!("Avg Games / Postseason: {:.2}", avg_games_per_ps);
+    
+    let ps_throughput = total_sims_f / duration.as_secs_f64();
+    let game_throughput = total_games_simulated as f64 / duration.as_secs_f64();
+    println!("Postseason Throughput: {:.0} postseasons/sec", ps_throughput);
+    println!("Game Throughput:       {:.0} games/sec", game_throughput);
 }

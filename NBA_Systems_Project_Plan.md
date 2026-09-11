@@ -303,7 +303,7 @@ The purpose is to provide a credible computational workload.
 
 ---
 
-# 7. Phase 3 â€” Establish the Baseline
+# 7. Phase 3 — [x] Establish the Baseline
 
 Before introducing advanced optimization, benchmark the basic implementation.
 
