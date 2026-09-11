@@ -10,6 +10,7 @@ pub fn run_custom_work_stealing(
     total_simulations: u32,
     num_threads: usize,
     _chunk_size: u32, // Unused now, we use native stealing
+    pin_threads: bool,
 ) -> SimAccumulator {
     // 1. Create a queue for each thread
     let workers: Vec<_> = (0..num_threads).map(|_| Worker::new_fifo()).collect();
@@ -34,11 +35,17 @@ pub fn run_custom_work_stealing(
     // 4. Spawn scoped threads
     thread::scope(|s| {
         let mut handles = Vec::with_capacity(num_threads);
+        let core_ids = if pin_threads { core_affinity::get_core_ids() } else { None };
         
         for (i, worker) in workers.into_iter().enumerate() {
             let stealers = stealers.clone();
+            let core_id = core_ids.as_ref().and_then(|ids| ids.get(i % ids.len()).copied());
             
             let handle = s.spawn(move |_| {
+                if let Some(id) = core_id {
+                    core_affinity::set_for_current(id);
+                }
+                
                 let mut local_acc = SimAccumulator::default();
                 
                 loop {

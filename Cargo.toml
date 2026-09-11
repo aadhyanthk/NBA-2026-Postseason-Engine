@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.4", features = ["derive"] }
+core_affinity = "0.8.3"
 crossbeam-deque = "0.8.8"
 crossbeam-utils = "0.8.23"
 rand = "0.8"

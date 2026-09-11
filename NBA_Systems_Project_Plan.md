@@ -1036,7 +1036,7 @@ A successful outcome may be:
 
 ---
 
-# 24. Phase 20 â€” NUMA and CPU Affinity (Optional)
+# 24. Phase 20 — [x] NUMA and CPU Affinity (Optional)
 
 Only investigate this if the benchmark environment supports meaningful multi-socket or high-core-count testing.
 

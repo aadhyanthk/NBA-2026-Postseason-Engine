@@ -24,6 +24,9 @@ struct Args {
 
     #[arg(long, default_value = "rayon")]
     scheduler: String,
+
+    #[arg(long)]
+    pin_threads: bool,
 }
 
 fn main() {
@@ -80,10 +83,22 @@ fn main() {
 
     let final_acc = if args.scheduler == "custom" {
         println!("Scheduler: Custom Chase-Lev Work-Stealing");
-        run_custom_work_stealing(args.seed, args.simulations, args.threads as usize, 500)
+        run_custom_work_stealing(args.seed, args.simulations, args.threads as usize, 500, args.pin_threads)
     } else {
         println!("Scheduler: Rayon Parallel Iterator");
-        let pool = rayon::ThreadPoolBuilder::new().num_threads(args.threads as usize).build().unwrap();
+        let mut builder = rayon::ThreadPoolBuilder::new().num_threads(args.threads as usize);
+        if args.pin_threads {
+            if let Some(core_ids) = core_affinity::get_core_ids() {
+                builder = builder.start_handler(move |idx| {
+                    if let Some(core_id) = core_ids.get(idx % core_ids.len()) {
+                        core_affinity::set_for_current(*core_id);
+                    }
+                });
+            } else {
+                println!("Warning: --pin-threads requested but OS core IDs could not be retrieved.");
+            }
+        }
+        let pool = builder.build().unwrap();
         pool.install(|| {
             (0..args.simulations).into_par_iter().fold(
                 || SimAccumulator::default(),
