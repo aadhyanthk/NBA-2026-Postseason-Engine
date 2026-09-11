@@ -888,7 +888,7 @@ Explanation:
 
 ---
 
-# 20. Phase 16 â€” SIMD
+# 20. Phase 16 — [x] SIMD
 
 Only after profiling identifies suitable arithmetic-heavy loops should SIMD be investigated.
 
