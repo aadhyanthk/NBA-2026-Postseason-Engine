@@ -72,35 +72,57 @@ fn main() {
     println!("Format: 2026 NBA Postseason (Play-In + Best-of-7 Playoffs)\n");
     
     let start_time = Instant::now();
-    let mut play_in_counts = [0u32; 30];
-    let mut playoff_counts = [0u32; 30];
-    let mut conf_finals_counts = [0u32; 30];
-    let mut finals_counts = [0u32; 30];
-    let mut championships = [0u32; 30];
-    let mut total_games_simulated = 0u64;
 
-    // Single-threaded simulation loop for Phase 1 / Phase 3 Baseline
-    for sim_id in 0..args.simulations {
-        // Hierarchical seeded RNG for deterministic execution (SimID changes per loop)
-        let mut rng = NbaRng::from_seed_and_ids(args.seed, sim_id as u64, 0);
-        let result = simulate_postseason(&mut rng);
+    // Phase 7, 8, 9: Parallel Tree-Reduction via Rayon
+    let pool = rayon::ThreadPoolBuilder::new().num_threads(args.threads as usize).build().unwrap();
 
-        total_games_simulated += result.total_games as u64;
-        
-        for &team_id in &result.play_in_teams {
-            play_in_counts[team_id.0 as usize] += 1;
-        }
-        for &team_id in &result.playoff_teams {
-            playoff_counts[team_id.0 as usize] += 1;
-        }
-        for &team_id in &result.conf_finals_teams {
-            conf_finals_counts[team_id.0 as usize] += 1;
-        }
-        for &team_id in &result.finals_teams {
-            finals_counts[team_id.0 as usize] += 1;
-        }
-        championships[result.champion.0 as usize] += 1;
-    }
+    let (
+        play_in_counts, 
+        playoff_counts, 
+        conf_finals_counts, 
+        finals_counts, 
+        championships, 
+        total_games_simulated
+    ) = pool.install(|| {
+        (0..args.simulations).into_par_iter().fold(
+            || (
+                [0u32; 30], // play_in
+                [0u32; 30], // playoffs
+                [0u32; 30], // conf_finals
+                [0u32; 30], // finals
+                [0u32; 30], // championships
+                0u64        // total games
+            ),
+            |mut acc, sim_id| {
+                let mut rng = NbaRng::from_seed_and_ids(args.seed, sim_id as u64, 0);
+                let result = simulate_postseason(&mut rng);
+
+                acc.5 += result.total_games as u64;
+                for &team_id in &result.play_in_teams { acc.0[team_id.0 as usize] += 1; }
+                for &team_id in &result.playoff_teams { acc.1[team_id.0 as usize] += 1; }
+                for &team_id in &result.conf_finals_teams { acc.2[team_id.0 as usize] += 1; }
+                for &team_id in &result.finals_teams { acc.3[team_id.0 as usize] += 1; }
+                acc.4[result.champion.0 as usize] += 1;
+
+                acc
+            }
+        ).reduce(
+            || (
+                [0u32; 30], [0u32; 30], [0u32; 30], [0u32; 30], [0u32; 30], 0u64
+            ),
+            |mut a, b| {
+                for i in 0..30 {
+                    a.0[i] += b.0[i];
+                    a.1[i] += b.1[i];
+                    a.2[i] += b.2[i];
+                    a.3[i] += b.3[i];
+                    a.4[i] += b.4[i];
+                }
+                a.5 += b.5;
+                a
+            }
+        )
+    });
 
     let duration = start_time.elapsed();
     let total_sims_f = args.simulations as f64;

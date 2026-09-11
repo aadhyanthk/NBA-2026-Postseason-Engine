@@ -547,7 +547,7 @@ Do not create meaningless property tests just to use the library.
 
 ---
 
-# 11. Phase 7 â€” Parallelize the Simulation
+# 11. Phase 7 — [x] Parallelize the Simulation
 
 Now introduce multithreading.
 
@@ -585,7 +585,7 @@ Add 32 only if the test machine has enough logical/physical resources to make th
 
 ---
 
-# 12. Phase 8 â€” Avoid Shared Mutable State
+# 12. Phase 8 — [x] Avoid Shared Mutable State
 
 Do NOT have every worker update a global counter if it can be avoided.
 
@@ -623,7 +623,7 @@ Use thread-local/per-worker accumulators.
 
 ---
 
-# 13. Phase 9 â€” Reduction
+# 13. Phase 9 — [x] Reduction
 
 Combine per-thread results into one final result.
 
@@ -662,7 +662,7 @@ Explain:
 
 ---
 
-# 14. Phase 10 â€” Parallel Scaling Benchmarks
+# 14. Phase 10 — [x] Parallel Scaling Benchmarks
 
 Now create a proper scaling benchmark.
 
@@ -712,7 +712,7 @@ Never fabricate benchmark results.
 
 ---
 
-# 15. Phase 11 â€” Learn and Apply Amdahl's Law
+# 15. Phase 11 — [x] Learn and Apply Amdahl's Law
 
 Analyze why scaling is not perfectly linear.
 
