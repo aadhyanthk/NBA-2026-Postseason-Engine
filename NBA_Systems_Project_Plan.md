@@ -357,7 +357,7 @@ Keep historical results so improvements can be demonstrated.
 
 ---
 
-# 8. Phase 4 â€” Understand and Implement Deterministic Randomness
+# 8. Phase 4 — [x] Understand and Implement Deterministic Randomness
 
 This is one of the most important project features.
 
@@ -443,7 +443,7 @@ Explain:
 
 ---
 
-# 9. Phase 5 â€” Determinism Verification
+# 9. Phase 5 — [x] Determinism Verification
 
 Build a dedicated verification mode.
 

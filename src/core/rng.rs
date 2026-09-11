@@ -1,24 +1,34 @@
 use rand::{Rng, SeedableRng};
-use rand_chacha::ChaCha8Rng;
+use rand_pcg::Pcg64Mcg;
 
 pub struct NbaRng {
-    rng: ChaCha8Rng,
+    rng: Pcg64Mcg,
 }
 
 impl NbaRng {
     pub fn new(seed: u64) -> Self {
         Self {
-            rng: ChaCha8Rng::seed_from_u64(seed),
+            rng: Pcg64Mcg::seed_from_u64(seed),
         }
+    }
+
+    /// SplitMix64 avalanche function to thoroughly mix seed components
+    fn splitmix64(mut x: u64) -> u64 {
+        x = x.wrapping_add(0x9e3779b97f4a7c15);
+        x = (x ^ (x >> 30)).wrapping_mul(0xbf58476d1ce4e5b9);
+        x = (x ^ (x >> 27)).wrapping_mul(0x94d049bb133111eb);
+        x ^ (x >> 31)
     }
 
     /// Hierarchical seed generation for deterministic parallel execution.
     pub fn from_seed_and_ids(global_seed: u64, sim_id: u64, game_id: u64) -> Self {
-        // A simple hash function to combine the IDs (can be replaced with Philox/PCG later)
-        let mut combined = global_seed;
-        combined = combined.wrapping_add(sim_id).wrapping_mul(0x9E3779B97F4A7C15);
-        combined = combined.wrapping_add(game_id).wrapping_mul(0x9E3779B97F4A7C15);
-        Self::new(combined)
+        // We use splitmix64 on each id layer and XOR them to combine
+        let mut combined = Self::splitmix64(global_seed);
+        combined ^= Self::splitmix64(sim_id);
+        combined ^= Self::splitmix64(game_id);
+        
+        // One final avalanche ensures dense entropy distribution for the PCG seeder
+        Self::new(Self::splitmix64(combined))
     }
 
     pub fn gen_range(&mut self, low: f32, high: f32) -> f32 {

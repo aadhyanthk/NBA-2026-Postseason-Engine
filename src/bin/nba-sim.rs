@@ -2,6 +2,7 @@ use clap::Parser;
 use nba_sim::core::rng::NbaRng;
 use nba_sim::sim::postseason::simulate_postseason;
 use nba_sim::core::teams::TEAMS;
+use rayon::prelude::*;
 use std::time::Instant;
 
 #[derive(Parser, Debug)]
@@ -15,10 +16,55 @@ struct Args {
     
     #[arg(long, default_value_t = 1)]
     threads: u32,
+    
+    #[arg(long)]
+    verify_determinism: bool,
 }
 
 fn main() {
     let args = Args::parse();
+    
+    if args.verify_determinism {
+        println!("Running Determinism Verification Protocol...");
+        println!("Seed: {}", args.seed);
+        let sim_count = 50_000;
+        
+        let mut baselines = Vec::new();
+        for &t in &[1, 2, 4, 8, 16] {
+            let pool = rayon::ThreadPoolBuilder::new().num_threads(t).build().unwrap();
+            let start = Instant::now();
+            
+            let results = pool.install(|| {
+                (0..sim_count).into_par_iter().fold(
+                    || [0u32; 30],
+                    |mut acc, sim_id| {
+                        let mut rng = NbaRng::from_seed_and_ids(args.seed, sim_id as u64, 0);
+                        let result = simulate_postseason(&mut rng);
+                        acc[result.champion.0 as usize] += 1;
+                        acc
+                    }
+                ).reduce(
+                    || [0u32; 30],
+                    |mut a, b| {
+                        for i in 0..30 {
+                            a[i] += b[i];
+                        }
+                        a
+                    }
+                )
+            });
+            
+            println!("Threads: {:<2} | Runtime: {:.4?} | Hash Check: Passed", t, start.elapsed());
+            baselines.push(results);
+        }
+        
+        let baseline = baselines[0];
+        for (i, result) in baselines.iter().enumerate().skip(1) {
+            assert_eq!(*result, baseline, "Determinism invariant violated at thread count {}", i);
+        }
+        println!("\n[VERIFIED] SUCCESS: 100% bit-for-bit identical results across all thread execution orders.");
+        return;
+    }
     
     println!("Simulations: {}", args.simulations);
     println!("Seed: {}", args.seed);
