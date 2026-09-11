@@ -62,8 +62,43 @@ We benchmarked 100,000 simulations on 16 threads comparing standard release buil
 
 ---
 
+## How to Build and Run with Host CPU Vectorization
+
+To compile and benchmark the engine with full hardware vectorization enabled on the host machine:
+
+### Option 1: Temporary Environment Flag (Recommended)
+
+#### Windows (PowerShell)
+```powershell
+$env:RUSTFLAGS="-C target-cpu=native"
+cargo run --release --bin nba-sim -- --simulations 100000 --threads 16
+```
+
+#### Linux / macOS (Bash / Zsh)
+```bash
+RUSTFLAGS="-C target-cpu=native" cargo run --release --bin nba-sim -- --simulations 100000 --threads 16
+```
+
+### Option 2: Project-Level Configuration (.cargo/config.toml)
+To automatically apply native CPU target instructions on all local builds without setting environment variables:
+
+Create or edit `.cargo/config.toml`:
+```toml
+[build]
+rustflags = ["-C", "target-cpu=native"]
+```
+
+### Option 3: Verifying Vector Instruction Generation (LLVM Vectorizer Inspection)
+To verify that LLVM successfully vectorizes loops without manually inspecting disassembly:
+```bash
+RUSTFLAGS="-C target-cpu=native -C llvm-args=-pass-remarks-analysis=loop-vectorize" cargo build --release
+```
+
+---
+
 ## Conclusion & Architectural Defense
 
 1. **Maintainability**: Zero lines of unsafe/architecture-locked intrinsic assembly; idiomatic, readable Rust.
 2. **Portability**: Compiles cleanly across x86_64 (AVX2/AVX-512), ARM64 (NEON), and RISC-V.
 3. **Engineering Standard**: Demonstrates a deep understanding of CPU vector pipelines, instruction divergence, and when **not** to force SIMD into a branch-heavy stochastic Markov model.
+
