@@ -36,3 +36,27 @@ impl SeriesResult {
         }
     }
 }
+
+#[derive(Clone, Default)]
+#[repr(align(64))] // Force 64-byte cache-line alignment to prevent false sharing
+pub struct SimAccumulator {
+    pub play_in: [u32; 30],
+    pub playoffs: [u32; 30],
+    pub conf_finals: [u32; 30],
+    pub finals: [u32; 30],
+    pub championships: [u32; 30],
+    pub total_games: u64,
+}
+
+impl SimAccumulator {
+    pub fn merge(&mut self, other: &Self) {
+        for i in 0..30 {
+            self.play_in[i] += other.play_in[i];
+            self.playoffs[i] += other.playoffs[i];
+            self.conf_finals[i] += other.conf_finals[i];
+            self.finals[i] += other.finals[i];
+            self.championships[i] += other.championships[i];
+        }
+        self.total_games += other.total_games;
+    }
+}

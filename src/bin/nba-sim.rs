@@ -2,6 +2,7 @@ use clap::Parser;
 use nba_sim::core::rng::NbaRng;
 use nba_sim::sim::postseason::simulate_postseason;
 use nba_sim::core::teams::TEAMS;
+use nba_sim::core::types::SimAccumulator;
 use rayon::prelude::*;
 use std::time::Instant;
 
@@ -76,49 +77,26 @@ fn main() {
     // Phase 7, 8, 9: Parallel Tree-Reduction via Rayon
     let pool = rayon::ThreadPoolBuilder::new().num_threads(args.threads as usize).build().unwrap();
 
-    let (
-        play_in_counts, 
-        playoff_counts, 
-        conf_finals_counts, 
-        finals_counts, 
-        championships, 
-        total_games_simulated
-    ) = pool.install(|| {
+    let final_acc = pool.install(|| {
         (0..args.simulations).into_par_iter().fold(
-            || (
-                [0u32; 30], // play_in
-                [0u32; 30], // playoffs
-                [0u32; 30], // conf_finals
-                [0u32; 30], // finals
-                [0u32; 30], // championships
-                0u64        // total games
-            ),
+            || SimAccumulator::default(),
             |mut acc, sim_id| {
                 let mut rng = NbaRng::from_seed_and_ids(args.seed, sim_id as u64, 0);
                 let result = simulate_postseason(&mut rng);
 
-                acc.5 += result.total_games as u64;
-                for &team_id in &result.play_in_teams { acc.0[team_id.0 as usize] += 1; }
-                for &team_id in &result.playoff_teams { acc.1[team_id.0 as usize] += 1; }
-                for &team_id in &result.conf_finals_teams { acc.2[team_id.0 as usize] += 1; }
-                for &team_id in &result.finals_teams { acc.3[team_id.0 as usize] += 1; }
-                acc.4[result.champion.0 as usize] += 1;
+                acc.total_games += result.total_games as u64;
+                for &team_id in &result.play_in_teams { acc.play_in[team_id.0 as usize] += 1; }
+                for &team_id in &result.playoff_teams { acc.playoffs[team_id.0 as usize] += 1; }
+                for &team_id in &result.conf_finals_teams { acc.conf_finals[team_id.0 as usize] += 1; }
+                for &team_id in &result.finals_teams { acc.finals[team_id.0 as usize] += 1; }
+                acc.championships[result.champion.0 as usize] += 1;
 
                 acc
             }
         ).reduce(
-            || (
-                [0u32; 30], [0u32; 30], [0u32; 30], [0u32; 30], [0u32; 30], 0u64
-            ),
+            || SimAccumulator::default(),
             |mut a, b| {
-                for i in 0..30 {
-                    a.0[i] += b.0[i];
-                    a.1[i] += b.1[i];
-                    a.2[i] += b.2[i];
-                    a.3[i] += b.3[i];
-                    a.4[i] += b.4[i];
-                }
-                a.5 += b.5;
+                a.merge(&b);
                 a
             }
         )
@@ -134,27 +112,27 @@ fn main() {
     let mut sorted_teams: Vec<_> = TEAMS.iter().collect();
     // Sort by championships descending, then finals, then conf finals, then playoffs
     sorted_teams.sort_by(|a, b| {
-        let champ_diff = championships[b.id.0 as usize].cmp(&championships[a.id.0 as usize]);
+        let champ_diff = final_acc.championships[b.id.0 as usize].cmp(&final_acc.championships[a.id.0 as usize]);
         if champ_diff != std::cmp::Ordering::Equal {
             return champ_diff;
         }
-        let fin_diff = finals_counts[b.id.0 as usize].cmp(&finals_counts[a.id.0 as usize]);
+        let fin_diff = final_acc.finals[b.id.0 as usize].cmp(&final_acc.finals[a.id.0 as usize]);
         if fin_diff != std::cmp::Ordering::Equal {
             return fin_diff;
         }
-        let cf_diff = conf_finals_counts[b.id.0 as usize].cmp(&conf_finals_counts[a.id.0 as usize]);
+        let cf_diff = final_acc.conf_finals[b.id.0 as usize].cmp(&final_acc.conf_finals[a.id.0 as usize]);
         if cf_diff != std::cmp::Ordering::Equal {
             return cf_diff;
         }
-        playoff_counts[b.id.0 as usize].cmp(&playoff_counts[a.id.0 as usize])
+        final_acc.playoffs[b.id.0 as usize].cmp(&final_acc.playoffs[a.id.0 as usize])
     });
 
     for team in sorted_teams {
-        let play_in = play_in_counts[team.id.0 as usize];
-        let playoffs = playoff_counts[team.id.0 as usize];
-        let conf_finals = conf_finals_counts[team.id.0 as usize];
-        let finals = finals_counts[team.id.0 as usize];
-        let champ = championships[team.id.0 as usize];
+        let play_in = final_acc.play_in[team.id.0 as usize];
+        let playoffs = final_acc.playoffs[team.id.0 as usize];
+        let conf_finals = final_acc.conf_finals[team.id.0 as usize];
+        let finals = final_acc.finals[team.id.0 as usize];
+        let champ = final_acc.championships[team.id.0 as usize];
 
         if play_in > 0 || playoffs > 0 {
             let play_in_str = if team.seed >= 7 && team.seed <= 10 {
@@ -183,12 +161,12 @@ fn main() {
     println!("\n{:-<92}", "");
     println!("Runtime: {:.4?}", duration);
     println!("Total Postseasons: {}", args.simulations);
-    println!("Total Games Simulated: {}", total_games_simulated);
-    let avg_games_per_ps = total_games_simulated as f64 / total_sims_f;
+    println!("Total Games Simulated: {}", final_acc.total_games);
+    let avg_games_per_ps = final_acc.total_games as f64 / total_sims_f;
     println!("Avg Games / Postseason: {:.2}", avg_games_per_ps);
     
     let ps_throughput = total_sims_f / duration.as_secs_f64();
-    let game_throughput = total_games_simulated as f64 / duration.as_secs_f64();
+    let game_throughput = final_acc.total_games as f64 / duration.as_secs_f64();
     println!("Postseason Throughput: {:.0} postseasons/sec", ps_throughput);
     println!("Game Throughput:       {:.0} games/sec", game_throughput);
 }

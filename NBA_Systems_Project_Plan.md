@@ -955,7 +955,7 @@ Do not blindly remove branches.
 
 ---
 
-# 22. Phase 18 â€” False Sharing
+# 22. Phase 18 — [x] False Sharing
 
 Understand cache lines.
 
