@@ -928,7 +928,7 @@ Do not sacrifice portability or maintainability for a tiny benchmark gain.
 
 ---
 
-# 21. Phase 17 â€” Branch Prediction
+# 21. Phase 17 — [x] Branch Prediction
 
 Identify branches inside extremely hot loops.
 

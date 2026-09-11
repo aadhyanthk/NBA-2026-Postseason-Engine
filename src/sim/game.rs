@@ -94,32 +94,28 @@ fn calc_shot_probs(expected_ppp: f32, tov_pct: f32, three_point_rate: f32) -> (f
 fn simulate_possession(tov_pct: f32, oreb_pct: f32, p3: f32, p2: f32, p1: f32, rng: &mut NbaRng) -> u16 {
     let mut points = 0;
 
+    let p2_threshold = p3 + p2;
+    let p1_threshold = p3 + p2 + p1;
+
     for _ in 0..3 { // Cap offensive rebounds at 3
         if rng.gen_range(0.0, 1.0) < tov_pct {
             return points; 
         }
 
         let draw = rng.gen_range(0.0, 1.0);
-        let mut scored = false;
+        
+        // Branchless arithmetic selection to avoid branch misprediction pipeline flushes
+        let pts = ((draw < p3) as u16 * 3)
+                + ((draw >= p3 && draw < p2_threshold) as u16 * 2)
+                + ((draw >= p2_threshold && draw < p1_threshold) as u16 * 1);
 
-        if draw < p3 {
-            points += 3;
-            scored = true;
-        } else if draw < p3 + p2 {
-            points += 2;
-            scored = true;
-        } else if draw < p3 + p2 + p1 {
-            points += 1;
-            scored = true;
-        }
+        points += pts;
 
-        if scored {
+        if pts > 0 {
             break;
         } else {
             // Missed shot. Do we offensive rebound?
-            if rng.gen_range(0.0, 1.0) < oreb_pct {
-                continue;
-            } else {
+            if rng.gen_range(0.0, 1.0) >= oreb_pct {
                 break;
             }
         }
