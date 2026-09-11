@@ -36,6 +36,29 @@ $$\text{Scaling Factor } S = \frac{\text{PPP}_{\text{matchup}}}{1.15}$$
 
 *Note: This simplifies the intricate mechanics of offensive rebounds, steals, and blocks, but accurately replicates total possession-level efficiency.*
 
+## 4. Possession Micro-Model (Four Factors Integration)
+For each possession, the engine simulates discrete outcomes based on a dynamic probability curve mapped from the team's matchup expected PPP, 3-Point Rate, TOV%, and OREB%.
+
+### Turnover Check
+Before shot mechanics trigger, a turnover check occurs.
+$$P(\text{Turnover}) = \text{TOV\%}$$
+If a turnover occurs, the possession ends with 0 points.
+
+### Shot Generation & Dynamic Variance
+If no turnover occurs, the remaining PPP is scaled and distributed among shot values. Teams with a higher `3P Rate` shift more of their scoring probability into 3-pointers and out of 2-pointers, inherently raising the variance (standard deviation) of their final scores.
+
+$$\text{Base Scaling } S = \frac{(\text{PPP}_{\text{matchup}} / (1 - \text{TOV\%}))}{1.15}$$
+$$\text{Shift Factor} = \frac{\text{3P Rate}}{0.40}$$
+
+- **3-Point Play (3 pts)**: $P(3) = (0.12 \times S) \times \text{Shift Factor}$
+- **2-Point Play (2 pts)**: $P(2) = (0.35 \times S) - \text{Probability Shift}$
+- **Free Throw / And-1 (1 pt)**: $P(1) = 0.09 \times S$
+
+### Offensive Rebounding
+If a shot is missed (the remaining probability), an offensive rebound check occurs:
+$$P(\text{Offensive Rebound}) = \text{OREB\%}$$
+If successful, the possession resets for another shot attempt (recursively capped at 3 offensive rebounds per possession to prevent infinite loops).
+
 ## 5. Overtime Resolution
 If regulation (typically ~100 possessions) ends in a tie, the simulation enters 5-minute overtime periods. Each team is given an additional 10 possessions until the tie is broken.
 
@@ -43,8 +66,5 @@ If regulation (typically ~100 possessions) ends in a tie, the simulation enters 
 The simulation ensures bit-for-bit reproducible results across threads by using a splittable ChaCha20 random number generator. The seed for each simulation is generated via:
 $$\text{Seed}_{\text{sim}} = \text{Hash}(\text{MasterSeed}, \text{SimID}, \text{ContextID})$$
 
-## 7. Limitations & Future Improvements
-- **Limitations**: The model lacks individual player impacts (injuries, star fatigue) and ignores time-sensitive late-game fouling strategies.
-- **Future Improvements**:
-  - Implement dynamic variance (e.g., jump-shooting teams have higher standard deviations in point totals).
-  - Add specific four-factor metrics (eTOV%, OREB%) for deeper interaction instead of monolithic ORtg/DRtg.
+## 7. Limitations
+- The model lacks individual player impacts (injuries, star fatigue, specific rotational advantages) and ignores time-sensitive late-game fouling strategies.
