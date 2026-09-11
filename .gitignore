@@ -1,4 +1,4 @@
-﻿# Logs
+# Logs
 logs
 *.log
 npm-debug.log*
@@ -29,6 +29,7 @@ dist-ssr
 !readme.md
 
 # Project specific
+target/
 .env
 src-tauri/target
 .agents
