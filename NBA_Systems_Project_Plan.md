@@ -843,7 +843,7 @@ Document allocation behavior in `docs/MEMORY.md`.
 
 ---
 
-# 19. Phase 15 â€” Profiling
+# 19. Phase 15 — [x] Profiling
 
 Learn to profile before attempting further optimization.
 
