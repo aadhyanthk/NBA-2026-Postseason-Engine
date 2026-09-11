@@ -16,6 +16,9 @@ path = "src/lib.rs"
 name = "nba-sim"
 path = "src/bin/nba-sim.rs"
 
+[dev-dependencies]
+proptest = "1.4"
+
 # Aggressive optimizations for the simulation engine baseline
 [profile.release]
 lto = "fat"             # Enable Link-Time Optimization (cross-crate optimizations)

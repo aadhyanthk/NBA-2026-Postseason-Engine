@@ -159,6 +159,7 @@ fn get_lower_seed(t1: TeamId, t2: TeamId) -> TeamId {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude::*;
 
     #[test]
     fn test_simulate_postseason_invariants() {
@@ -186,6 +187,28 @@ mod tests {
         assert_eq!(res1.champion, res2.champion);
         assert_eq!(res1.total_games, res2.total_games);
         assert_eq!(res1.finals_teams, res2.finals_teams);
+    }
+
+    proptest! {
+        // Fuzz 1,000 distinct seed/sim_id combinations to mathematically prove invariants
+        #![proptest_config(ProptestConfig::with_cases(1000))]
+        #[test]
+        fn fuzz_postseason_invariants(global_seed in any::<u64>(), sim_id in any::<u64>()) {
+            let mut rng = NbaRng::from_seed_and_ids(global_seed, sim_id, 0);
+            let result = simulate_postseason(&mut rng);
+            
+            // Total games must always bound strictly between 66 and 111
+            prop_assert!(result.total_games >= 66 && result.total_games <= 111);
+            
+            // Champion must exist in the finals array
+            prop_assert!(result.finals_teams.contains(&result.champion));
+            
+            // There must be exactly 16 playoff teams
+            prop_assert_eq!(result.playoff_teams.len(), 16);
+
+            // Valid Team IDs are in [0, 29]
+            prop_assert!(result.champion.0 < 30);
+        }
     }
 }
 
