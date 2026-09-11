@@ -1,4 +1,4 @@
-# Logs
+﻿# Logs
 logs
 *.log
 npm-debug.log*
@@ -23,16 +23,12 @@ dist-ssr
 *.sln
 *.sw?
 
+# Markdown files (ignore all except README.md)
+*.md
+!README.md
+!readme.md
+
 # Project specific
-GEMINI.md
-PROJECT.md
-PRODUCT.md
-DESIGN.md
-LOG.md
-CHANGES.md
-implementation_plan.md
-INITIAL-CONVERSATION.MD
-TOFIX.md
 .env
 src-tauri/target
 .agents
