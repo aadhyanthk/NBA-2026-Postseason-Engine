@@ -992,7 +992,7 @@ Document:
 
 ---
 
-# 23. Phase 19 â€” Custom Work-Stealing Scheduler (Optional Advanced Phase)
+# 23. Phase 19 — [x] Custom Work-Stealing Scheduler (Optional Advanced Phase)
 
 Only attempt this after the Rayon implementation is complete and benchmarked.
 

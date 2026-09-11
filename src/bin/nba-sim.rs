@@ -3,6 +3,7 @@ use nba_sim::core::rng::NbaRng;
 use nba_sim::sim::postseason::simulate_postseason;
 use nba_sim::core::teams::TEAMS;
 use nba_sim::core::types::SimAccumulator;
+use nba_sim::sim::custom_scheduler::run_custom_work_stealing;
 use rayon::prelude::*;
 use std::time::Instant;
 
@@ -20,6 +21,9 @@ struct Args {
     
     #[arg(long)]
     verify_determinism: bool,
+
+    #[arg(long, default_value = "rayon")]
+    scheduler: String,
 }
 
 fn main() {
@@ -74,33 +78,37 @@ fn main() {
     
     let start_time = Instant::now();
 
-    // Phase 7, 8, 9: Parallel Tree-Reduction via Rayon
-    let pool = rayon::ThreadPoolBuilder::new().num_threads(args.threads as usize).build().unwrap();
+    let final_acc = if args.scheduler == "custom" {
+        println!("Scheduler: Custom Chase-Lev Work-Stealing");
+        run_custom_work_stealing(args.seed, args.simulations, args.threads as usize, 500)
+    } else {
+        println!("Scheduler: Rayon Parallel Iterator");
+        let pool = rayon::ThreadPoolBuilder::new().num_threads(args.threads as usize).build().unwrap();
+        pool.install(|| {
+            (0..args.simulations).into_par_iter().fold(
+                || SimAccumulator::default(),
+                |mut acc, sim_id| {
+                    let mut rng = NbaRng::from_seed_and_ids(args.seed, sim_id as u64, 0);
+                    let result = simulate_postseason(&mut rng);
 
-    let final_acc = pool.install(|| {
-        (0..args.simulations).into_par_iter().fold(
-            || SimAccumulator::default(),
-            |mut acc, sim_id| {
-                let mut rng = NbaRng::from_seed_and_ids(args.seed, sim_id as u64, 0);
-                let result = simulate_postseason(&mut rng);
+                    acc.total_games += result.total_games as u64;
+                    for &team_id in &result.play_in_teams { acc.play_in[team_id.0 as usize] += 1; }
+                    for &team_id in &result.playoff_teams { acc.playoffs[team_id.0 as usize] += 1; }
+                    for &team_id in &result.conf_finals_teams { acc.conf_finals[team_id.0 as usize] += 1; }
+                    for &team_id in &result.finals_teams { acc.finals[team_id.0 as usize] += 1; }
+                    acc.championships[result.champion.0 as usize] += 1;
 
-                acc.total_games += result.total_games as u64;
-                for &team_id in &result.play_in_teams { acc.play_in[team_id.0 as usize] += 1; }
-                for &team_id in &result.playoff_teams { acc.playoffs[team_id.0 as usize] += 1; }
-                for &team_id in &result.conf_finals_teams { acc.conf_finals[team_id.0 as usize] += 1; }
-                for &team_id in &result.finals_teams { acc.finals[team_id.0 as usize] += 1; }
-                acc.championships[result.champion.0 as usize] += 1;
-
-                acc
-            }
-        ).reduce(
-            || SimAccumulator::default(),
-            |mut a, b| {
-                a.merge(&b);
-                a
-            }
-        )
-    });
+                    acc
+                }
+            ).reduce(
+                || SimAccumulator::default(),
+                |mut a, b| {
+                    a.merge(&b);
+                    a
+                }
+            )
+        })
+    };
 
     let duration = start_time.elapsed();
     let total_sims_f = args.simulations as f64;
