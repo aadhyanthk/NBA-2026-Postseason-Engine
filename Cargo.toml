@@ -14,3 +14,11 @@ path = "src/lib.rs"
 [[bin]]
 name = "nba-sim"
 path = "src/bin/nba-sim.rs"
+
+# Aggressive optimizations for the simulation engine baseline
+[profile.release]
+lto = "fat"             # Enable Link-Time Optimization (cross-crate optimizations)
+codegen-units = 1       # Maximize optimization at the cost of compile time
+panic = "abort"         # Remove panic unwinding code
+opt-level = 3           # Highest optimization level (default for release, but explicit)
+strip = true            # Strip symbols to reduce binary size
