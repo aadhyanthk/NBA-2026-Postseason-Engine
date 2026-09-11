@@ -145,8 +145,11 @@ fn get_higher_seed(t1: TeamId, t2: TeamId) -> TeamId {
         t2
     } else {
         // Tie break by Net Rating
-        let t1_net = team1.ortg - team1.drtg;
-        let t2_net = team2.ortg - team2.drtg;
+        use crate::core::teams::LEAGUE_STATS_SOA;
+        let idx1 = t1.0 as usize;
+        let idx2 = t2.0 as usize;
+        let t1_net = LEAGUE_STATS_SOA.ortg[idx1] - LEAGUE_STATS_SOA.drtg[idx1];
+        let t2_net = LEAGUE_STATS_SOA.ortg[idx2] - LEAGUE_STATS_SOA.drtg[idx2];
         if t1_net >= t2_net { t1 } else { t2 }
     }
 }

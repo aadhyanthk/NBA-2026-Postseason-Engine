@@ -1,5 +1,5 @@
 use crate::core::types::{GameResult, TeamId};
-use crate::core::teams::get_team;
+use crate::core::teams::LEAGUE_STATS_SOA;
 use crate::core::rng::NbaRng;
 
 const LEAGUE_AVG_PACE: f32 = 99.0;
@@ -7,15 +7,33 @@ const LEAGUE_AVG_EFF: f32 = 115.0;
 const HCA_BONUS: f32 = 3.2;
 
 pub fn simulate_game(home: TeamId, away: TeamId, rng: &mut NbaRng) -> GameResult {
-    let t_home = get_team(home);
-    let t_away = get_team(away);
+    let h_idx = home.0 as usize;
+    let a_idx = away.0 as usize;
+
+    let h_pace = LEAGUE_STATS_SOA.pace[h_idx];
+    let a_pace = LEAGUE_STATS_SOA.pace[a_idx];
+
+    let h_ortg = LEAGUE_STATS_SOA.ortg[h_idx];
+    let a_ortg = LEAGUE_STATS_SOA.ortg[a_idx];
+
+    let h_drtg = LEAGUE_STATS_SOA.drtg[h_idx];
+    let a_drtg = LEAGUE_STATS_SOA.drtg[a_idx];
+
+    let h_tov = LEAGUE_STATS_SOA.tov_pct[h_idx];
+    let a_tov = LEAGUE_STATS_SOA.tov_pct[a_idx];
+
+    let h_oreb = LEAGUE_STATS_SOA.oreb_pct[h_idx];
+    let a_oreb = LEAGUE_STATS_SOA.oreb_pct[a_idx];
+
+    let h_3pr = LEAGUE_STATS_SOA.three_point_rate[h_idx];
+    let a_3pr = LEAGUE_STATS_SOA.three_point_rate[a_idx];
 
     // Calculate game pace based on team paces
-    let pace = (t_home.pace * t_away.pace) / LEAGUE_AVG_PACE;
+    let pace = (h_pace * a_pace) / LEAGUE_AVG_PACE;
 
     // Calculate expected efficiencies
-    let home_eff = t_home.ortg + t_away.drtg - LEAGUE_AVG_EFF + HCA_BONUS;
-    let away_eff = t_away.ortg + t_home.drtg - LEAGUE_AVG_EFF;
+    let home_eff = h_ortg + a_drtg - LEAGUE_AVG_EFF + HCA_BONUS;
+    let away_eff = a_ortg + h_drtg - LEAGUE_AVG_EFF;
 
     let home_ppp = home_eff / 100.0;
     let away_ppp = away_eff / 100.0;
@@ -26,15 +44,15 @@ pub fn simulate_game(home: TeamId, away: TeamId, rng: &mut NbaRng) -> GameResult
     let total_possessions = pace.round() as u32;
 
     for _ in 0..total_possessions {
-        home_score += simulate_possession(home_ppp, t_home.tov_pct, t_home.oreb_pct, t_home.three_point_rate, rng);
-        away_score += simulate_possession(away_ppp, t_away.tov_pct, t_away.oreb_pct, t_away.three_point_rate, rng);
+        home_score += simulate_possession(home_ppp, h_tov, h_oreb, h_3pr, rng);
+        away_score += simulate_possession(away_ppp, a_tov, a_oreb, a_3pr, rng);
     }
 
     // Overtime resolution
     while home_score == away_score {
         for _ in 0..10 {
-            home_score += simulate_possession(home_ppp, t_home.tov_pct, t_home.oreb_pct, t_home.three_point_rate, rng);
-            away_score += simulate_possession(away_ppp, t_away.tov_pct, t_away.oreb_pct, t_away.three_point_rate, rng);
+            home_score += simulate_possession(home_ppp, h_tov, h_oreb, h_3pr, rng);
+            away_score += simulate_possession(away_ppp, a_tov, a_oreb, a_3pr, rng);
         }
     }
 

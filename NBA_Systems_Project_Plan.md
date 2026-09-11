@@ -742,7 +742,7 @@ The README should explicitly discuss:
 
 ---
 
-# 16. Phase 12 â€” Data-Oriented Design
+# 16. Phase 12 — [x] Data-Oriented Design
 
 Once the parallel baseline works, investigate the data layout.
 
@@ -790,7 +790,7 @@ Do not convert every structure to SoA automatically.
 
 ---
 
-# 17. Phase 13 â€” Cache-Aware Benchmarking
+# 17. Phase 13 — [x] Cache-Aware Benchmarking
 
 Create a controlled comparison:
 
@@ -815,7 +815,7 @@ That is a valid engineering result.
 
 ---
 
-# 18. Phase 14 â€” Allocation Analysis
+# 18. Phase 14 — [x] Allocation Analysis
 
 Inspect allocations in the simulation hot path.
 
