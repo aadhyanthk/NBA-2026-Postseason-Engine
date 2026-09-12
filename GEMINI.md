@@ -1,4 +1,4 @@
-﻿# GEMINI.md — NBA 2026 Postseason Systems Engine Operating Manual
+# GEMINI.md — NBA 2026 Postseason Systems Engine Operating Manual
 
 This file governs all interactions and implementations within this workspace. Read and follow these directives before answering any user request or generating code.
 
@@ -8,6 +8,7 @@ This file governs all interactions and implementations within this workspace. Re
 
 - **Project Identity**: `NBA-2026-Postseason-Engine` — A native Rust, high-throughput, deterministic, multi-threaded Monte Carlo simulation engine modeling the 2026 NBA Postseason (Play-In Tournament & Best-of-7 Playoff series).
 - **Target Standard**: Unimpeachable systems engineering quality that withstands a brutal 30-minute technical grilling by an HFT or low-level systems engineer.
+- **Output Aesthetics**: Whatever the user sees (CLI output, HTML reports, documentation) MUST NOT look "vibe-coded". It must look as close to industry-grade professional software as possible. Use clean terminal tables (e.g. `comfy-table` or well-aligned formatting), clear reporting, and rigorous scientific precision.
 - **Tone**: Rigorous, systems-first, precise, honest, anti-hype.
 
 ---
@@ -73,7 +74,25 @@ Do not implement SIMD, custom allocators, or lock-free queues without:
 
 ---
 
-## 6. Git Commit & Push Protocol (MANDATORY)
+## 6. Anti-Vibe-Coding & Visual Aesthetics Standards (MANDATORY)
+
+Whatever the user sees (CLI output, HTML reports, documentation, logs) MUST NOT look "vibe-coded". It must reflect an industry-grade, professional systems engineering pedigree. 
+
+- **CLI / Terminal Output**: 
+  - Never print unaligned, sloppy debug dumps to the user.
+  - Always use properly structured, border-aligned tables (e.g., `comfy-table`).
+  - Use clear tabular headers: `[Runtime]`, `[Throughput (games/sec)]`, `[Parallel Efficiency]`.
+  - Use appropriate decimal precision (e.g. `23,041 ps/s`, not `23041.49219491 ps/s`).
+- **Reports & Artifacts**:
+  - HTML or Markdown reports must feel like technical papers or institutional database readouts. 
+  - Do not use generic, unstyled web outputs. Employ clean CSS with strong typography (e.g., Inter, JetBrains Mono), readable tables, and rigorous data presentation.
+- **Tone & Messaging**:
+  - No emojis in serious log lines.
+  - No conversational or casual phrasing in system alerts (e.g., say `[WARNING] Cache-line alignment failed`, not `Whoops, alignment broke!`).
+
+---
+
+## 7. Git Commit & Push Protocol (MANDATORY)
 
 - **Continuous Version Control**: Commits and pushes to GitHub must be made whenever **ANY** change is completed.
 - **Commit Format**: Follow standard Conventional Commits format:

@@ -1058,7 +1058,7 @@ CPU-pinned workers
 
 ---
 
-# 25. Phase 21 â€” Benchmark Suite
+# 25. Phase 21 — [x] Benchmark Suite
 
 Create a proper benchmark suite.
 
