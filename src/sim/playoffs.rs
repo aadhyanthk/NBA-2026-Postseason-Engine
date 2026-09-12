@@ -1,8 +1,9 @@
 use crate::core::types::{SeriesResult, TeamId};
+use crate::core::seasons::SeasonData;
 use crate::core::rng::NbaRng;
 use crate::sim::game::simulate_game;
 
-pub fn simulate_series(team_a: TeamId, team_b: TeamId, rng: &mut NbaRng) -> SeriesResult {
+pub fn simulate_series(team_a: TeamId, team_b: TeamId, rng: &mut NbaRng, season: &SeasonData) -> SeriesResult {
     let mut wins_a = 0;
     let mut wins_b = 0;
 
@@ -14,7 +15,7 @@ pub fn simulate_series(team_a: TeamId, team_b: TeamId, rng: &mut NbaRng) -> Seri
     for &home_team in &home_schedule {
         let away_team = if home_team == team_a { team_b } else { team_a };
         
-        let result = simulate_game(home_team, away_team, rng);
+        let result = simulate_game(home_team, away_team, rng, season);
         if result.winner == team_a {
             wins_a += 1;
         } else {
@@ -48,7 +49,8 @@ mod tests {
             let team_a = TeamId(t1_id);
             let team_b = TeamId(t2_id);
             
-            let result = simulate_series(team_a, team_b, &mut rng);
+            let season = &crate::core::seasons::SEASONS[10]; // use 2026 for tests
+            let result = simulate_series(team_a, team_b, &mut rng, season);
             
             // Invariants of a Best-of-7 series:
             let total_games = result.team_a_wins + result.team_b_wins;

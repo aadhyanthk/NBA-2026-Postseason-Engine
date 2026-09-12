@@ -1,4 +1,5 @@
 use crate::core::types::TeamId;
+use crate::core::seasons::SeasonData;
 use crate::core::rng::NbaRng;
 use crate::sim::game::simulate_game;
 
@@ -9,18 +10,19 @@ pub fn simulate_play_in(
     seed9: TeamId,
     seed10: TeamId,
     rng: &mut NbaRng,
+    season: &SeasonData,
 ) -> (TeamId, TeamId) {
     // Game 1: 7 vs 8 (7 is home)
-    let g1_result = simulate_game(seed7, seed8, rng);
+    let g1_result = simulate_game(seed7, seed8, rng, season);
     let g1_winner = g1_result.winner;
     let g1_loser = if g1_winner == seed7 { seed8 } else { seed7 };
 
     // Game 2: 9 vs 10 (9 is home)
-    let g2_result = simulate_game(seed9, seed10, rng);
+    let g2_result = simulate_game(seed9, seed10, rng, season);
     let g2_winner = g2_result.winner;
 
     // Game 3: Loser of Game 1 vs Winner of Game 2 (Loser of Game 1 is home)
-    let g3_result = simulate_game(g1_loser, g2_winner, rng);
+    let g3_result = simulate_game(g1_loser, g2_winner, rng, season);
     let final_seed8 = g3_result.winner;
 
     // The 7th seed is the winner of Game 1

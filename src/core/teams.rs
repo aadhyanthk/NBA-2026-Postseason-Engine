@@ -1,6 +1,8 @@
 use super::types::{Conference, TeamId};
 
-#[derive(Debug, Clone)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Team {
     pub id: TeamId,
     pub name: &'static str,

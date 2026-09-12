@@ -11,6 +11,7 @@ pub fn run_custom_work_stealing(
     num_threads: usize,
     _chunk_size: u32, // Unused now, we use native stealing
     pin_threads: bool,
+    season: &'static crate::core::seasons::SeasonData,
 ) -> SimAccumulator {
     // 1. Create a queue for each thread
     let workers: Vec<_> = (0..num_threads).map(|_| Worker::new_fifo()).collect();
@@ -53,7 +54,7 @@ pub fn run_custom_work_stealing(
                     if let Some(chunk) = worker.pop() {
                         for sim_id in chunk {
                             let mut rng = NbaRng::from_seed_and_ids(seed, sim_id as u64, 0);
-                            let result = simulate_postseason(&mut rng);
+                            let result = simulate_postseason(&mut rng, season);
                             
                             local_acc.total_games += result.total_games as u64;
                             for &team_id in &result.play_in_teams { local_acc.play_in[team_id.0 as usize] += 1; }
@@ -79,7 +80,7 @@ pub fn run_custom_work_stealing(
                                 Steal::Success(chunk) => {
                                     for sim_id in chunk {
                                         let mut rng = NbaRng::from_seed_and_ids(seed, sim_id as u64, 0);
-                                        let result = simulate_postseason(&mut rng);
+                                        let result = simulate_postseason(&mut rng, season);
                                         
                                         local_acc.total_games += result.total_games as u64;
                                         for &team_id in &result.play_in_teams { local_acc.play_in[team_id.0 as usize] += 1; }

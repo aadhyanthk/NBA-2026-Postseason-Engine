@@ -61,7 +61,8 @@ fn main() {
                 || SimAccumulator::default(),
                 |mut acc, sim_id| {
                     let mut rng = NbaRng::from_seed_and_ids(seed, sim_id as u64, 0);
-                    let result = simulate_postseason(&mut rng);
+                    let season = &nba_sim::core::seasons::SEASONS[10];
+                    let result = simulate_postseason(&mut rng, season);
                     acc.total_games += result.total_games as u64;
                     acc
                 }
@@ -112,7 +113,8 @@ fn main() {
             || SimAccumulator::default(),
             |mut acc, sim_id| {
                 let mut rng = NbaRng::from_seed_and_ids(seed, sim_id as u64, 0);
-                let result = simulate_postseason(&mut rng);
+                let season = &nba_sim::core::seasons::SEASONS[10];
+                let result = simulate_postseason(&mut rng, season);
                 acc.total_games += result.total_games as u64;
                 acc
             }
@@ -129,7 +131,8 @@ fn main() {
     
     // 2. Custom Unpinned
     let start = Instant::now();
-    let acc_cu = run_custom_work_stealing(seed, sim_count, 16, 500, false);
+    let season = &nba_sim::core::seasons::SEASONS[10];
+    let acc_cu = run_custom_work_stealing(seed, sim_count, 16, 500, false, season);
     let runtime_cu = start.elapsed().as_secs_f64();
     scheduler_table.add_row(vec![
         "Custom Chase-Lev",
@@ -155,7 +158,8 @@ fn main() {
             || SimAccumulator::default(),
             |mut acc, sim_id| {
                 let mut rng = NbaRng::from_seed_and_ids(seed, sim_id as u64, 0);
-                let result = simulate_postseason(&mut rng);
+                let season = &nba_sim::core::seasons::SEASONS[10];
+                let result = simulate_postseason(&mut rng, season);
                 acc.total_games += result.total_games as u64;
                 acc
             }

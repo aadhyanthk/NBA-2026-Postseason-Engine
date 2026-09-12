@@ -1,32 +1,34 @@
 use crate::core::types::{GameResult, TeamId};
-use crate::core::teams::LEAGUE_STATS_SOA;
+use crate::core::seasons::SeasonData;
 use crate::core::rng::NbaRng;
 
 const LEAGUE_AVG_PACE: f32 = 99.0;
 const LEAGUE_AVG_EFF: f32 = 115.0;
 const HCA_BONUS: f32 = 3.2;
 
-pub fn simulate_game(home: TeamId, away: TeamId, rng: &mut NbaRng) -> GameResult {
+pub fn simulate_game(home: TeamId, away: TeamId, rng: &mut NbaRng, season: &SeasonData) -> GameResult {
     let h_idx = home.0 as usize;
     let a_idx = away.0 as usize;
 
-    let h_pace = LEAGUE_STATS_SOA.pace[h_idx];
-    let a_pace = LEAGUE_STATS_SOA.pace[a_idx];
+    let stats = &season.stats;
 
-    let h_ortg = LEAGUE_STATS_SOA.ortg[h_idx];
-    let a_ortg = LEAGUE_STATS_SOA.ortg[a_idx];
+    let h_pace = stats.pace[h_idx];
+    let a_pace = stats.pace[a_idx];
 
-    let h_drtg = LEAGUE_STATS_SOA.drtg[h_idx];
-    let a_drtg = LEAGUE_STATS_SOA.drtg[a_idx];
+    let h_ortg = stats.ortg[h_idx];
+    let a_ortg = stats.ortg[a_idx];
 
-    let h_tov = LEAGUE_STATS_SOA.tov_pct[h_idx];
-    let a_tov = LEAGUE_STATS_SOA.tov_pct[a_idx];
+    let h_drtg = stats.drtg[h_idx];
+    let a_drtg = stats.drtg[a_idx];
 
-    let h_oreb = LEAGUE_STATS_SOA.oreb_pct[h_idx];
-    let a_oreb = LEAGUE_STATS_SOA.oreb_pct[a_idx];
+    let h_tov = stats.tov_pct[h_idx];
+    let a_tov = stats.tov_pct[a_idx];
 
-    let h_3pr = LEAGUE_STATS_SOA.three_point_rate[h_idx];
-    let a_3pr = LEAGUE_STATS_SOA.three_point_rate[a_idx];
+    let h_oreb = stats.oreb_pct[h_idx];
+    let a_oreb = stats.oreb_pct[a_idx];
+
+    let h_3pr = stats.three_point_rate[h_idx];
+    let a_3pr = stats.three_point_rate[a_idx];
 
     // Calculate game pace based on team paces
     let pace = (h_pace * a_pace) / LEAGUE_AVG_PACE;

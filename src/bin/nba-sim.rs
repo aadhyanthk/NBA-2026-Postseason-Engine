@@ -1,7 +1,7 @@
 use clap::Parser;
 use nba_sim::core::rng::NbaRng;
 use nba_sim::sim::postseason::simulate_postseason;
-use nba_sim::core::teams::TEAMS;
+use nba_sim::core::seasons::SEASONS;
 use nba_sim::core::types::SimAccumulator;
 use nba_sim::sim::custom_scheduler::run_custom_work_stealing;
 use rayon::prelude::*;
@@ -25,6 +25,9 @@ struct Args {
     #[arg(long, default_value = "rayon")]
     scheduler: String,
 
+    #[arg(long, default_value_t = 2026)]
+    year: u32,
+
     #[arg(long)]
     pin_threads: bool,
 }
@@ -32,8 +35,15 @@ struct Args {
 fn main() {
     let args = Args::parse();
     
+    let season = SEASONS.iter().find(|s| s.year == args.year)
+        .unwrap_or_else(|| {
+            println!("Warning: Year {} not found. Falling back to 2026.", args.year);
+            &SEASONS[10]
+        });
+    
     if args.verify_determinism {
         println!("Running Determinism Verification Protocol...");
+        println!("Year: {}", season.year);
         println!("Seed: {}", args.seed);
         let sim_count = 50_000;
         
@@ -47,7 +57,7 @@ fn main() {
                     || [0u32; 30],
                     |mut acc, sim_id| {
                         let mut rng = NbaRng::from_seed_and_ids(args.seed, sim_id as u64, 0);
-                        let result = simulate_postseason(&mut rng);
+                        let result = simulate_postseason(&mut rng, season);
                         acc[result.champion.0 as usize] += 1;
                         acc
                     }
@@ -77,13 +87,13 @@ fn main() {
     println!("Simulations: {}", args.simulations);
     println!("Seed: {}", args.seed);
     println!("Threads: {}", args.threads);
-    println!("Format: 2026 NBA Postseason (Play-In + Best-of-7 Playoffs)\n");
+    println!("Format: {} NBA Postseason (Play-In + Best-of-7 Playoffs)\n", season.year);
     
     let start_time = Instant::now();
 
     let final_acc = if args.scheduler == "custom" {
         println!("Scheduler: Custom Chase-Lev Work-Stealing");
-        run_custom_work_stealing(args.seed, args.simulations, args.threads as usize, 500, args.pin_threads)
+        run_custom_work_stealing(args.seed, args.simulations, args.threads as usize, 500, args.pin_threads, season)
     } else {
         println!("Scheduler: Rayon Parallel Iterator");
         let mut builder = rayon::ThreadPoolBuilder::new().num_threads(args.threads as usize);
@@ -104,7 +114,7 @@ fn main() {
                 || SimAccumulator::default(),
                 |mut acc, sim_id| {
                     let mut rng = NbaRng::from_seed_and_ids(args.seed, sim_id as u64, 0);
-                    let result = simulate_postseason(&mut rng);
+                    let result = simulate_postseason(&mut rng, season);
 
                     acc.total_games += result.total_games as u64;
                     for &team_id in &result.play_in_teams { acc.play_in[team_id.0 as usize] += 1; }
@@ -132,7 +142,7 @@ fn main() {
         "Team", "Conf", "Play-In %", "Playoffs %", "Conf Finals %", "Finals %", "Champion %");
     println!("{:-<92}", "");
 
-    let mut sorted_teams: Vec<_> = TEAMS.iter().collect();
+    let mut sorted_teams: Vec<_> = season.teams.iter().collect();
     // Sort by championships descending, then finals, then conf finals, then playoffs
     sorted_teams.sort_by(|a, b| {
         let champ_diff = final_acc.championships[b.id.0 as usize].cmp(&final_acc.championships[a.id.0 as usize]);

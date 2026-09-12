@@ -1,13 +1,15 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TeamId(pub u8);
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Conference {
     East,
     West,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct GameResult {
     pub home_team: TeamId,
     pub away_team: TeamId,
@@ -16,7 +18,7 @@ pub struct GameResult {
     pub winner: TeamId,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct SeriesResult {
     pub team_a: TeamId, // Higher seed usually
     pub team_b: TeamId,
@@ -37,7 +39,7 @@ impl SeriesResult {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 #[repr(align(64))] // Force 64-byte cache-line alignment to prevent false sharing
 pub struct SimAccumulator {
     pub play_in: [u32; 30],
