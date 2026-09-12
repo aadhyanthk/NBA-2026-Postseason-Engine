@@ -1,0 +1,31 @@
+name: Determinism Verification CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  verify:
+    name: Verify Determinism and Build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Rust Toolchain
+      uses: dtolnay/rust-toolchain@stable
+      
+    - name: Build Bench Suite
+      run: cargo build --release --bin bench-suite
+      
+    - name: Build Engine (Release)
+      run: cargo build --release --bin nba-sim
+      
+    - name: Verify Determinism Invariant (1..16 threads)
+      run: cargo run --release --bin nba-sim -- --verify-determinism
